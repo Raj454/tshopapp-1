@@ -75,10 +75,8 @@ export function validateHmac(query: Record<string, string>, apiSecret: string): 
  */
 export async function getAccessToken(shop: string, code: string, apiKey: string, apiSecret: string): Promise<string> {
   try {
-    // Use the current Replit domain for the callback
-    const redirectUri = process.env.REPL_SLUG 
-      ? `https://${process.env.REPL_SLUG}-${process.env.REPL_OWNER}.repl.co/oauth/shopify/callback`
-      : 'http://localhost:5000/oauth/shopify/callback';
+    // Use the exact same redirect_uri that was used in the initial auth request
+    const redirectUri = `https://e351400e-4d91-4b59-8d02-6b2e1e1d3ebd-00-2dn7uhcj3pqiy.worf.replit.dev/shopify/callback`;
     
     const response = await axios.post(
       `https://${shop}/admin/oauth/access_token`,

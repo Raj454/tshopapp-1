@@ -1,8 +1,7 @@
-import { Switch, Route, useLocation, Redirect } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { apiRequest } from "@/lib/queryClient";
 import Navbar from "@/components/Navbar";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
@@ -24,34 +23,34 @@ import { useEffect, useState } from "react";
 function Router() {
   const [location] = useLocation();
   const [showNavbar, setShowNavbar] = useState(true);
-
+  
   useEffect(() => {
     // Check if the URL has Shopify embedded parameters
     const urlParams = new URLSearchParams(window.location.search);
     const isEmbedded = urlParams.has('shop') && 
                       (urlParams.has('host') || urlParams.get('embedded') === '1');
-
+    
     // Hide navbar if we're in embedded mode
     setShowNavbar(!isEmbedded);
-
+    
     // For embedded apps, add script to handle Shopify admin navigation
     if (isEmbedded) {
       const script = document.createElement('script');
       script.src = 'https://cdn.shopify.com/shopifycloud/app-bridge-api/v3.0.0/app-bridge-api.js';
       script.async = true;
       document.head.appendChild(script);
-
+      
       return () => {
         document.head.removeChild(script);
       };
     }
   }, [location]);
-
+  
   // Check if current URL has embedded params
   const urlParams = new URLSearchParams(window.location.search);
   const isEmbedded = urlParams.has('shop') && 
                    (urlParams.has('host') || urlParams.get('embedded') === '1');
-
+  
   return (
     <>
       {showNavbar && <Navbar />}
@@ -80,51 +79,6 @@ function Router() {
           <Route path="/admin" component={AdminPanel} />
           <Route path="/legacy-dashboard" component={Dashboard} />
           
-          {/* OAuth Routes */}
-          <Route path="/oauth/shopify/callback">
-            {() => {
-              // Handle OAuth callback
-              const params = new URLSearchParams(window.location.search);
-              const shop = params.get('shop');
-              return <Redirect to={`/app/dashboard?shop=${shop}`} />;
-            }}
-          </Route>
-          
-          {/* Catch shop parameter and redirect */}
-          <Route path="/app/dashboard">
-            {() => {
-              const params = new URLSearchParams(window.location.search);
-              const shop = params.get('shop');
-              const host = params.get('host');
-              
-              // If no shop parameter, redirect to install
-              if (!shop) {
-                return <Redirect to="/install" />;
-              }
-              
-              // Update current store in context
-              useEffect(() => {
-                if (shop) {
-                  // Fetch and update store data
-                  apiRequest('GET', `/api/shopify/store-info?shop=${encodeURIComponent(shop)}`)
-                    .then(response => {
-                      if (response.success) {
-                        // Force refresh store info
-                        queryClient.invalidateQueries({ queryKey: ['/api/shopify/store-info'] });
-                        // Force refresh products and collections
-                        queryClient.invalidateQueries({ queryKey: ['/api/admin/products'] });
-                        queryClient.invalidateQueries({ queryKey: ['/api/admin/collections'] });
-                        queryClient.invalidateQueries({ queryKey: ['/api/admin/blogs'] });
-                      }
-                    })
-                    .catch(console.error);
-                }
-              }, [shop]);
-              
-              return <AdminPanel />;
-            }}
-          </Route>
-
           {/* Fallback to 404 */}
           <Route component={NotFound} />
         </Switch>

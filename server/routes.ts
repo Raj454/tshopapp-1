@@ -223,22 +223,12 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   apiRouter.get("/shopify/store-info", async (req: Request, res: Response) => {
     try {
-      const shopDomain = req.query.shop as string;
-      let store;
+      const connection = await storage.getShopifyConnection();
       
-      if (shopDomain) {
-        store = await storage.getShopifyStoreByDomain(shopDomain);
-      } else {
-        const connection = await storage.getShopifyConnection();
-        if (connection && connection.isConnected) {
-          store = await storage.getShopifyStoreByDomain(connection.storeName);
-        }
-      }
-      
-      if (!store) {
+      if (!connection || !connection.isConnected) {
         return res.status(404).json({
           success: false,
-          error: "No active Shopify store found"
+          error: "No active Shopify connection found"
         });
       }
       
@@ -1382,7 +1372,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         
         // Redirect to the app with the shop and host parameters
         const host = nonceData.host;
-        const redirectUrl = `/app/dashboard?shop=${shop}${host ? `&host=${host}` : ''}`;
+        const redirectUrl = `/embedded?shop=${shop}${host ? `&host=${host}` : ''}`;
         
         res.redirect(redirectUrl);
       } catch (dbError: any) {
