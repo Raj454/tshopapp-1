@@ -1328,67 +1328,69 @@ export async function registerRoutes(app: Express): Promise<void> {
       const shopDomain = req.query.shop as string;
       let shopifyStore;
 
-      if (shopDomain) {
-        shopifyStore = await storage.getShopifyStoreByDomain(shopDomain);
-      } else {
-        const connection = await storage.getShopifyConnection();
-        if (connection && connection.isConnected) {
-          shopifyStore = await storage.getShopifyStoreByDomain(connection.storeName);
-        }
-      }
-
-      // First check if we already have this store
-      let store = await storage.getShopifyStoreByDomain(shop);
-      let storeId: number;
-
-      if (store) {
-        // Update the existing store
-        store = await storage.updateShopifyStore(store.id, {
-          accessToken,
-          isConnected: true,
-          lastSynced: new Date(),
-          uninstalledAt: null // Clear uninstall date if previously uninstalled
-        });
-        storeId = store.id;
-      } else {
-        // Create a new store
-        const storeName = shopData.name || shop;
-
-        store = await storage.createShopifyStore({
-          shopName: shop, // Using the shop domain as the shopName
-          accessToken,
-          scope: "read_products,write_products,read_content,write_content,read_themes,write_publications",
-          isConnected: true
-          // lastSynced will be set by default
-        });
-        storeId = store.id;
-
-        // Also update the legacy connection for backward compatibility
-        const existingConnection = await storage.getShopifyConnection();
-        if (existingConnection) {
-          await storage.updateShopifyConnection({
-            id: existingConnection.id,
-            storeName,
-            accessToken,
-            isConnected: true
-          });
+      try {
+        if (shopDomain) {
+          shopifyStore = await storage.getShopifyStoreByDomain(shopDomain);
         } else {
-          await storage.createShopifyConnection({
-            storeName,
-            accessToken,
-            isConnected: true
-          });
+          const connection = await storage.getShopifyConnection();
+          if (connection && connection.isConnected) {
+            shopifyStore = await storage.getShopifyStoreByDomain(connection.storeName);
+          }
         }
-      }
 
-      // Redirect to the app with the shop and host parameters
-      const host = nonceData.host;
-      const redirectUrl = `/embedded?shop=${shop}${host ? `&host=${host}` : ''}`;
+        // First check if we already have this store
+        let store = await storage.getShopifyStoreByDomain(shop);
+        let storeId: number;
 
-      res.redirect(redirectUrl);
+        if (store) {
+          // Update the existing store
+          store = await storage.updateShopifyStore(store.id, {
+            accessToken,
+            isConnected: true,
+            lastSynced: new Date(),
+            uninstalledAt: null // Clear uninstall date if previously uninstalled
+          });
+          storeId = store.id;
+        } else {
+          // Create a new store
+          const storeName = shopData.name || shop;
+
+          store = await storage.createShopifyStore({
+            shopName: shop, // Using the shop domain as the shopName
+            accessToken,
+            scope: "read_products,write_products,read_content,write_content,read_themes,write_publications",
+            isConnected: true
+            // lastSynced will be set by default
+          });
+          storeId = store.id;
+
+          // Also update the legacy connection for backward compatibility
+          const existingConnection = await storage.getShopifyConnection();
+          if (existingConnection) {
+            await storage.updateShopifyConnection({
+              id: existingConnection.id,
+              storeName,
+              accessToken,
+              isConnected: true
+            });
+          } else {
+            await storage.createShopifyConnection({
+              storeName,
+              accessToken,
+              isConnected: true
+            });
+          }
+        }
+
+        // Redirect to the app with the shop and host parameters
+        const host = nonceData.host;
+        const redirectUrl = `/embedded?shop=${shop}${host ? `&host=${host}` : ''}`;
+
+        res.redirect(redirectUrl);
       } catch (dbError: any) {
         console.error('Database error:', dbError);
         res.status(500).send('An error occurred while saving store data');
+      }
       }
     } catch (error: any) {
       console.error('OAuth callback error:', error);
