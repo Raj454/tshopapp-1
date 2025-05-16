@@ -1372,7 +1372,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         
         // Redirect to the app with the shop and host parameters
         const host = nonceData.host;
-        const redirectUrl = `/embedded?shop=${shop}${host ? `&host=${host}` : ''}`;
+        const redirectUrl = `/app/dashboard?shop=${shop}${host ? `&host=${host}` : ''}`;
         
         res.redirect(redirectUrl);
       } catch (dbError: any) {
