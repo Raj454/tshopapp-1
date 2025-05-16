@@ -1325,8 +1325,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const shopData = await getShopData(shop, accessToken);
 
       // Create or update the store in our multi-store database
-      try {
-        const shopDomain = req.query.shop as string;
+      const shopDomain = req.query.shop as string;
       let shopifyStore;
 
       if (shopDomain) {
