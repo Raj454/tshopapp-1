@@ -75,8 +75,10 @@ export function validateHmac(query: Record<string, string>, apiSecret: string): 
  */
 export async function getAccessToken(shop: string, code: string, apiKey: string, apiSecret: string): Promise<string> {
   try {
-    // Use the exact same redirect_uri that was used in the initial auth request
-    const redirectUri = `${process.env.APP_URL || 'http://localhost:5000'}/oauth/shopify/callback`;
+    // Use the host header to construct the redirect URI
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const host = process.env.REPL_SLUG ? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'localhost:5000';
+    const redirectUri = `${protocol}://${host}/oauth/shopify/callback`;
     
     const response = await axios.post(
       `https://${shop}/admin/oauth/access_token`,
