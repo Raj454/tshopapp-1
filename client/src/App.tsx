@@ -106,11 +106,15 @@ function Router() {
               useEffect(() => {
                 if (shop) {
                   // Fetch and update store data
-                  apiRequest('GET', `/api/shopify/store/${shop}`)
+                  apiRequest('GET', `/api/shopify/store-info?shop=${encodeURIComponent(shop)}`)
                     .then(response => {
                       if (response.success) {
-                        // Refresh store info
+                        // Force refresh store info
                         queryClient.invalidateQueries({ queryKey: ['/api/shopify/store-info'] });
+                        // Force refresh products and collections
+                        queryClient.invalidateQueries({ queryKey: ['/api/admin/products'] });
+                        queryClient.invalidateQueries({ queryKey: ['/api/admin/collections'] });
+                        queryClient.invalidateQueries({ queryKey: ['/api/admin/blogs'] });
                       }
                     })
                     .catch(console.error);

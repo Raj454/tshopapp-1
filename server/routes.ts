@@ -223,12 +223,22 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   apiRouter.get("/shopify/store-info", async (req: Request, res: Response) => {
     try {
-      const connection = await storage.getShopifyConnection();
+      const shopDomain = req.query.shop as string;
+      let store;
       
-      if (!connection || !connection.isConnected) {
+      if (shopDomain) {
+        store = await storage.getShopifyStoreByDomain(shopDomain);
+      } else {
+        const connection = await storage.getShopifyConnection();
+        if (connection && connection.isConnected) {
+          store = await storage.getShopifyStoreByDomain(connection.storeName);
+        }
+      }
+      
+      if (!store) {
         return res.status(404).json({
           success: false,
-          error: "No active Shopify connection found"
+          error: "No active Shopify store found"
         });
       }
       
