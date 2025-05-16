@@ -78,6 +78,26 @@ function Router() {
           <Route path="/help" component={Help} />
           <Route path="/admin" component={AdminPanel} />
           <Route path="/legacy-dashboard" component={Dashboard} />
+          
+          {/* OAuth Routes */}
+          <Route path="/oauth/shopify/callback">
+            {() => {
+              // Handle OAuth callback
+              const params = new URLSearchParams(window.location.search);
+              const shop = params.get('shop');
+              return <Redirect to={`/app/dashboard?shop=${shop}`} />;
+            }}
+          </Route>
+          
+          {/* Catch shop parameter and redirect */}
+          <Route path="/app/dashboard">
+            {() => {
+              const params = new URLSearchParams(window.location.search);
+              const shop = params.get('shop');
+              const host = params.get('host');
+              return shop ? <AdminPanel /> : <Redirect to="/install" />;
+            }}
+          </Route>
 
           {/* Fallback to 404 */}
           <Route component={NotFound} />
