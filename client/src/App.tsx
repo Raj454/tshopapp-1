@@ -95,7 +95,28 @@ function Router() {
               const params = new URLSearchParams(window.location.search);
               const shop = params.get('shop');
               const host = params.get('host');
-              return shop ? <AdminPanel /> : <Redirect to="/install" />;
+              
+              // If no shop parameter, redirect to install
+              if (!shop) {
+                return <Redirect to="/install" />;
+              }
+              
+              // Update current store in context
+              useEffect(() => {
+                if (shop) {
+                  // Fetch and update store data
+                  apiRequest('GET', `/api/shopify/store/${shop}`)
+                    .then(response => {
+                      if (response.success) {
+                        // Refresh store info
+                        queryClient.invalidateQueries({ queryKey: ['/api/shopify/store-info'] });
+                      }
+                    })
+                    .catch(console.error);
+                }
+              }, [shop]);
+              
+              return <AdminPanel />;
             }}
           </Route>
 
