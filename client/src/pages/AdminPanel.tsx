@@ -5280,7 +5280,15 @@ export default function AdminPanel() {
                                   isPrimary ? "opacity-100" : "opacity-90 hover:opacity-100"
                                 )}
                                 onClick={() => {
-                                  handleImageSelection(image, 'primary');
+                                  // Select this image as primary
+                                  setPrimaryImages(prev => {
+                                    // Create a new array with this image as the primary
+                                    return [{ ...image, isPrimary: true }];
+                                  });
+                                  toast({
+                                    title: "Primary image selected",
+                                    description: "Image has been set as the primary featured image"
+                                  });
                                 }}
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
@@ -5294,7 +5302,20 @@ export default function AdminPanel() {
                                   isSecondary ? "opacity-100" : "opacity-90 hover:opacity-100"
                                 )}
                                 onClick={() => {
-                                  handleImageSelection(image, 'secondary');
+                                  // Add this image to secondary images
+                                  setSecondaryImages(prev => {
+                                    // Check if image is already in the list
+                                    const exists = prev.some(img => img.id === image.id);
+                                    if (exists) {
+                                      return prev; // Already added
+                                    }
+                                    // Add it to the list
+                                    return [...prev, { ...image, isPrimary: false }];
+                                  });
+                                  toast({
+                                    title: "Secondary image added",
+                                    description: "Image has been added to your content images"
+                                  });
                                 }}
                               >
                                 <PlusCircle className="h-4 w-4 mr-1" />
