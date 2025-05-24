@@ -646,6 +646,10 @@ export function ChooseMediaDialog({
               <TabsContent value="products">
                 {renderTabContent()}
               </TabsContent>
+              
+              <TabsContent value="media_library">
+                {renderTabContent()}
+              </TabsContent>
             </Tabs>
           </TabsContent>
           
