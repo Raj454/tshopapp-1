@@ -698,3 +698,227 @@ export function ChooseMediaDialog({
     </Dialog>
   );
 }
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { useToast } from '@/hooks/use-toast';
+import { Search, ImageIcon, Loader2 } from 'lucide-react';
+import ShopifyImageViewer from './ShopifyImageViewer';
+import { apiRequest } from '@/lib/queryClient';
+
+export interface MediaImage {
+  id: string;
+  url: string;
+  width?: number;
+  height?: number;
+  alt?: string;
+  title?: string;
+  src?: {
+    original: string;
+    large: string;
+    medium: string;
+    small: string;
+    thumbnail: string;
+  };
+  source?: 'pexels' | 'product_image' | 'variant_image' | 'shopify_media' | 'uploaded';
+}
+
+interface ChooseMediaDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onImagesSelected: (images: MediaImage[]) => void;
+  initialSelectedImages?: MediaImage[];
+  maxImages?: number;
+  allowMultiple?: boolean;
+  title?: string;
+  description?: string;
+}
+
+export function ChooseMediaDialog({
+  open,
+  onOpenChange,
+  onImagesSelected,
+  initialSelectedImages = [],
+  maxImages = 10,
+  allowMultiple = true,
+  title = "Choose Media",
+  description = "Select images from your Shopify store or other sources."
+}: ChooseMediaDialogProps) {
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<'pexels' | 'products' | 'media_library'>('products');
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedImages, setSelectedImages] = useState<MediaImage[]>(initialSelectedImages);
+  const [searchResults, setSearchResults] = useState<MediaImage[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      loadInitialImages();
+    }
+  }, [open, activeTab]);
+
+  const loadInitialImages = async () => {
+    setIsLoading(true);
+    try {
+      if (activeTab === 'products') {
+        const response = await apiRequest('GET', '/api/media/product-images');
+        if (response.success && response.images) {
+          setSearchResults(response.images);
+        }
+      } else if (activeTab === 'media_library') {
+        const response = await apiRequest('GET', '/api/media/shopify-media-library');
+        if (response.success && response.images) {
+          setSearchResults(response.images);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading images:', error);
+      toast({
+        title: "Error loading images",
+        description: "Failed to load images. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await apiRequest('GET', '/api/media/pexels-search', {
+        params: { query: searchQuery }
+      });
+      
+      if (response.success && response.images) {
+        setSearchResults(response.images);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      toast({
+        title: "Search failed",
+        description: "Failed to search for images. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleImageSelection = (image: MediaImage) => {
+    setSelectedImages(prev => {
+      const isSelected = prev.some(img => img.id === image.id);
+      if (isSelected) {
+        return prev.filter(img => img.id !== image.id);
+      } else {
+        if (!allowMultiple) {
+          return [image];
+        }
+        if (prev.length >= maxImages) {
+          toast({
+            title: "Maximum images reached",
+            description: `You can only select up to ${maxImages} images`,
+            variant: "destructive"
+          });
+          return prev;
+        }
+        return [...prev, image];
+      }
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[900px] h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+          <TabsList>
+            <TabsTrigger value="products">Product Images</TabsTrigger>
+            <TabsTrigger value="media_library">Media Library</TabsTrigger>
+            <TabsTrigger value="pexels">Search Stock Images</TabsTrigger>
+          </TabsList>
+
+          <div className="mt-4">
+            {activeTab === 'pexels' && (
+              <div className="flex gap-2 mb-4">
+                <Input
+                  placeholder="Search for images..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <Button onClick={handleSearch} disabled={isLoading}>
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
+            )}
+
+            <div className="overflow-y-auto" style={{ height: 'calc(60vh - 100px)' }}>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : searchResults.length > 0 ? (
+                <div className="grid grid-cols-3 gap-4">
+                  {searchResults.map((image) => {
+                    const isSelected = selectedImages.some(img => img.id === image.id);
+                    return (
+                      <div
+                        key={image.id}
+                        className={`relative cursor-pointer rounded-lg overflow-hidden border-2 ${
+                          isSelected ? 'border-blue-500' : 'border-transparent'
+                        }`}
+                        onClick={() => toggleImageSelection(image)}
+                      >
+                        <ShopifyImageViewer
+                          src={image.url}
+                          alt={image.alt || ''}
+                          className="w-full aspect-square object-cover"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <ImageIcon className="h-12 w-12 mb-2" />
+                  <p>No images found</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </Tabs>
+
+        <DialogFooter>
+          <div className="flex justify-between w-full">
+            <div className="text-sm text-gray-500">
+              {selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} selected
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  onImagesSelected(selectedImages);
+                  onOpenChange(false);
+                }}
+                disabled={selectedImages.length === 0}
+              >
+                Use Selected Images
+              </Button>
+            </div>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
