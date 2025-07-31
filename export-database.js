@@ -1,8 +1,8 @@
 
-const { Pool, neonConfig } = require('@neondatabase/serverless');
-const fs = require('fs');
-const path = require('path');
-const ws = require('ws');
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import fs from 'fs';
+import path from 'path';
+import ws from 'ws';
 
 // Configure WebSocket for Neon
 neonConfig.webSocketConstructor = ws;
