@@ -191,18 +191,37 @@ async function exportDatabaseToSQL() {
   const filePath = path.join(process.cwd(), filename);
   
   try {
-    // Write SQL file
-    fs.writeFileSync(filePath, fullSQL);
+    // Ensure directory exists
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    // Write SQL file with explicit encoding
+    fs.writeFileSync(filePath, fullSQL, 'utf8');
+    
+    // Verify file was written
+    if (!fs.existsSync(filePath)) {
+      throw new Error('File was not created');
+    }
+    
+    const fileStats = fs.statSync(filePath);
+    if (fileStats.size === 0) {
+      throw new Error('File was created but is empty');
+    }
+    
     console.log(`\n📁 Database exported to: ${filename}`);
     console.log(`📊 Export Summary:`);
     console.log(`   - Tables exported successfully: ${successfulTables}`);
     console.log(`   - Tables with errors: ${errorTables}`);
     console.log(`   - Total rows exported: ${totalRows}`);
-    console.log(`   - File size: ${(fs.statSync(filePath).size / 1024).toFixed(2)} KB`);
+    console.log(`   - File size: ${(fileStats.size / 1024).toFixed(2)} KB`);
     
     return filename;
   } catch (error) {
     console.error('Failed to write SQL export file:', error);
+    console.error('Full SQL content length:', fullSQL.length);
+    console.error('Target file path:', filePath);
     throw error;
   }
 }
