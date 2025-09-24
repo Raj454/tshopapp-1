@@ -8,7 +8,7 @@ import path from "path";
 import fs from "fs";
 
 // Global maintenance mode flag
-let isMaintenanceMode = false;
+let isMaintenanceMode = false; 
 
 // Function to toggle maintenance mode
 export function setMaintenanceMode(active: boolean) {

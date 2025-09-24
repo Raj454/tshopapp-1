@@ -13,7 +13,7 @@ interface KeywordData {
 export class DataForSEOService {
   private apiUrl: string;
   private username: string;
-  private password: string;
+  private password: string; 
 
   constructor() {
     this.apiUrl = 'https://api.dataforseo.com';
